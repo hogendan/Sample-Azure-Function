@@ -13,23 +13,18 @@ namespace AzCourse.Function
     public static class MessageReceiver
     {
         [FunctionName("MessageReceiver")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
+        public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
+                                                    ILogger log,
+                                                    [Queue("message-queue"), StorageAccount("AzureWebJobsStorage")] ICollector<string> msg)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            string name = req.Query["name"];
-
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
+            // Add Message to storage queue
+            msg.Add(requestBody);
 
-            string responseMessage = string.IsNullOrEmpty(name)
-                ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : $"Hello, {name}. This HTTP triggered function executed successfully.";
 
-            return new OkObjectResult(responseMessage);
+            return new OkResult();
         }
     }
 }
